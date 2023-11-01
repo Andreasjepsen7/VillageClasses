@@ -50,20 +50,20 @@ public class Program
 
         peasants = new List<Peasant>
         {
-            new Peasant("Coal Miner", GetRandomTradeGoods(), "Mads", 20, new List<InventoryItem>(), 500, village, 100),
-            new Peasant("Woodcutter", GetRandomTradeGoods(), "Andreas", 23, new List<InventoryItem>(), 200, village, 100),
-            new Peasant("Fisher", GetRandomTradeGoods(), "Mikkel", 18, new List<InventoryItem>(), 50, fishingHut, 100)
+            new Peasant("Coal Miner", GetRandomTradeGoods(), "Mads", 20, 500, village, 100),
+            new Peasant("Woodcutter", GetRandomTradeGoods(), "Andreas", 23, 200, village, 100),
+            new Peasant("Fisher", GetRandomTradeGoods(), "Mikkel", 18, 50, fishingHut, 100)
         };
 
         village.Inhabitants.AddRange(peasants);
 
         pillagers = new List<Pillager>
         {
-            new Pillager("High", true, new List<Loot>(), false, false, "Pillager Joe", 30, new List<InventoryItem>(), 0, pillagersCamp, 100),
-            new Pillager("Medium", true, new List<Loot>(), false, false, "Pillager Monty", 30, new List<InventoryItem>(), 0, pillagersCamp, 100),
-            new Pillager("Low", false, new List<Loot>(), false, false, "Pillager Clyde", 30, new List<InventoryItem>(), 0, pillagersCamp, 100),
+            new Pillager("High", true, new List<Loot>(), false, false, "Pillager Joe", 30, new List<InventoryItem>(), 100, pillagersCamp, 100),
+            new Pillager("Medium", true, new List<Loot>(), false, false, "Pillager Monty", 30, new List<InventoryItem>(), 100, pillagersCamp, 100),
+            new Pillager("Low", false, new List<Loot>(), false, false, "Pillager Clyde", 30, new List<InventoryItem>(), 100, pillagersCamp, 100),
         };
-
+        pillagersCamp.Inhabitants.AddRange(pillagers);
 
 
         RandomEvent += HandleRandomEvent;
@@ -138,13 +138,18 @@ public class Program
         bool pillagersAttack = RNG.GenerateRandomNumber(1, 2) == 1; // 50% chance of attack
         if (pillagersAttack)
         {
-            PillagersCampAttack();
+            PillagersAttackPeasants();
+        }
+        else
+        {
+            PaladinsAttackPillagers();
         }
 
         CheckAndHandleDeceasedVillagers(village);
 
-        HandleCharacterInteractions(paladins[0], peasants[0]);
+        HandleCharacterInteractions();
     }
+
 
     static string GenerateRandomEvent(int eventType)
     {
@@ -161,9 +166,9 @@ public class Program
         }
     }
 
-    static void PillagersCampAttack()
+    static void PillagersAttackPeasants()
     {
-        Console.WriteLine("Pillagers are attacking a peasant!");
+        Console.WriteLine("Pillagers are attacking peasants!");
 
         // Select a random Peasant to target from the list of Peasants in the village
         List<Peasant> peasantsInVillage = village.Inhabitants.OfType<Peasant>().ToList();
@@ -193,26 +198,48 @@ public class Program
         }
     }
 
+    static void PaladinsAttackPillagers()
+    {
+        Console.WriteLine("Paladins are attacking pillagers!");
+
+        // Select a random Pillager to target from the list of Pillagers at the pillagersCamp
+        List<Pillager> pillagersAtCamp = pillagersCamp.Inhabitants.OfType<Pillager>().ToList();
+
+        if (pillagersAtCamp.Count == 0)
+        {
+            Console.WriteLine("There are no pillagers at the camp to attack.");
+            return; // Exit the method if there are no pillagers to attack
+        }
+
+        int randomPillagerIndex = RNG.GenerateRandomNumber(0, pillagersAtCamp.Count - 1);
+        Pillager targetPillager = pillagersAtCamp[randomPillagerIndex];
+
+        // Implement logic to decrease the targeted Pillager's health
+        int damage = RNG.GenerateRandomNumber(10, 30); // Random damage amount
+        targetPillager.Health -= damage;
+
+        Console.WriteLine($"{targetPillager.Name} suffered {damage} points of damage.");
+        Console.WriteLine($"Pillager {targetPillager.Name}'s Health: {targetPillager.Health}");
+
+        // Check if the pillager's health drops to or below zero
+        if (targetPillager.Health <= 0)
+        {
+            Console.WriteLine($"{targetPillager.Name} has been defeated!");
+            // Remove the defeated pillager from the pillagersCamp.Inhabitants list
+            pillagersCamp.Inhabitants.Remove(targetPillager);
+        }
+    }
 
 
     static void ViewAllCharacters()
     {
         foreach (Paladins paladin in paladins)
         {
-            if (paladin.CurrentLocationObj != null && paladin.CurrentLocationObj.Name != null)
-            {
-                Console.WriteLine("Paladin Name: " + paladin.Name);
-                Console.WriteLine("Armor Type: " + paladin.Armor);
-                Console.WriteLine("Health: " + paladin.Health);
-                Console.WriteLine("Inventory Weapon: " + paladin.EquippedWeapon.Name);
-                Console.WriteLine("Gold: " + paladin.Money);
-                Console.WriteLine("Location: " + paladin.CurrentLocationObj.Name);
-                Console.WriteLine();
-            }
-            else
-            {
-                Console.WriteLine("Paladin Location is not defined.");
-            }
+            Console.WriteLine("Paladin Name: " + paladin.Name);
+            Console.WriteLine("Health: " + paladin.Health);
+            Console.WriteLine("Inventory Weapon: " + paladin.EquippedWeapon.Name);
+            Console.WriteLine("Location: " + paladin.CurrentLocationObj.Name);
+            Console.WriteLine();
         }
 
         foreach (Peasant peasant in peasants)
@@ -220,6 +247,15 @@ public class Program
             Console.WriteLine("Peasant name: " + peasant.Name);
             Console.WriteLine("Peasant age: " + peasant.Age);
             Console.WriteLine("Peasant health: " + peasant.Health);
+            Console.WriteLine("Gold: " + peasant.Money);
+            if (peasant.Inventory != null && peasant.Inventory.Any())
+            {
+                Console.WriteLine("Inventory Items: " + string.Join(", ", peasant.Inventory.Select(ii => ii.Item.Name)));
+            }
+            else
+            {
+                Console.WriteLine("Peasant's Inventory is empty.");
+            }
             if (peasant.TradeGoods != null)
             {
                 Console.WriteLine("Peasant Trade Goods: " + string.Join(", ", peasant.TradeGoods.Select(g => g.Name)));
@@ -228,9 +264,9 @@ public class Program
             {
                 Console.WriteLine("Peasant Trade Goods are not defined.");
             }
-            Console.WriteLine("Gold: " + peasant.Money);
             Console.WriteLine();
         }
+
         foreach (Pillager pillager in pillagers)
         {
             Console.WriteLine("Pillager name: " + pillager.Name);
@@ -261,13 +297,22 @@ public class Program
         }
     }
 
-    static void HandleCharacterInteractions(Paladins paladin, Peasant peasant)
+    static void HandleCharacterInteractions()
     {
         Console.WriteLine("Random Character Interaction:");
 
-        if (peasant != null && peasant.Health > 0)
+        // Randomly select two distinct peasants
+        Peasant peasant1 = GetRandomPeasant(peasants);
+        Peasant peasant2;
+
+        do
         {
-            // The peasant is alive and can interact.
+            peasant2 = GetRandomPeasant(peasants);
+        } while (peasant2 == peasant1);
+
+        if (peasant1 != null && peasant2 != null && peasant1.Health > 0 && peasant2.Health > 0)
+        {
+            // Both peasants are alive and can interact.
 
             // Generate a random interaction option
             int randomInteraction = RNG.GenerateRandomNumber(1, 4);
@@ -275,122 +320,34 @@ public class Program
             switch (randomInteraction)
             {
                 case 1:
-                    if (peasant.TradeGoods != null)
-                    {
-                        paladin.BuyItem(peasant, new Food { Name = "Bread", Nutrition = 10, Price = new Price(5) }, 10);
-                        Console.WriteLine($"{peasant.Name} bought food from {peasant.Name}.");
-                    }
+                    Console.WriteLine($"{peasant1.Name} and {peasant2.Name} traded items.");
+                    TradeItems(peasant1, peasant2);
                     break;
                 case 2:
-                    // Peasant sells food to a Paladin
-                    if (paladin != null && peasant != null && peasant.TradeGoods != null)
-                    {
-                        peasant.SellItem(paladin, new Food { Name = "Apples", Nutrition = 8, Price = new Price(4) }, 5);
-                        Console.WriteLine($"{peasant.Name} sold food to {paladin.Name}.");
-                    }
+                    Console.WriteLine($"{peasant1.Name} and {peasant2.Name} talked about the weather.");
                     break;
                 case 3:
-                    // Villagers trade food items
-                    TradeItemsBetweenPeasants(new List<Peasant> { peasant });
-                    Console.WriteLine($"Peasants traded food items.");
+                    Console.WriteLine($"{peasant1.Name} and {peasant2.Name} played a game.");
                     break;
                 case 4:
-                    // Villagers trade non-food items
-                    TradeItemsBetweenPeasants(new List<Peasant> { peasant });
-                    Console.WriteLine("Peasants traded non-food items.");
+                    Console.WriteLine($"{peasant1.Name} and {peasant2.Name} had a meal together.");
                     break;
             }
         }
         else
         {
-            Console.WriteLine($"{peasant.Name} is dead and cannot trade or interact.");
+            Console.WriteLine($"{peasant1.Name} and {peasant2.Name} cannot interact because one or both are dead.");
         }
     }
 
-
-
-
-    static void TradeItemsBetweenPeasants(List<Peasant> peasants)
+    static void HandleRandomEvent(string message)
     {
-        Peasant peasant1 = GetRandomPeasant(peasants);
-        Peasant peasant2 = GetRandomPeasant(peasants);
-
-        if (peasant1 != null && peasant2 != null)
-        {
-            // Select random food items to trade
-            IItem item1 = GetRandomFoodItem(peasant1);
-            IItem item2 = GetRandomFoodItem(peasant2);
-
-            if (item1 != null && item2 != null)
-            {
-                Console.WriteLine($"{peasant1.Name} offers {item1.Name} to {peasant2.Name} in exchange for {item2.Name}.");
-
-                if (item1 is Food && item2 is Food)
-                {
-                    // If both items are food, exchange them
-                    peasant1.Inventory.Remove(new InventoryItem { Item = item1 });
-                    peasant1.Inventory.Add(new InventoryItem { Item = item2 });
-
-                    peasant2.Inventory.Remove(new InventoryItem { Item = item2 });
-                    peasant2.Inventory.Add(new InventoryItem { Item = item1 });
-
-                    Console.WriteLine("Trade successful: Both items were food.");
-                }
-                else
-                {
-                    Console.WriteLine("Trade failed: Peasants couldn't agree on the terms.");
-                }
-            }
-            else
-            {
-                Console.WriteLine("One of the peasants does not have food items to trade.");
-            }
-        }
-        else
-        {
-            Console.WriteLine("No eligible peasants found for trading.");
-        }
+        Console.WriteLine("Random Event: " + message);
     }
-
-    static IItem GetRandomFoodItem(Peasant peasant)
-    {
-        // Check if the peasant has food items in their inventory
-        var foodItems = peasant.Inventory
-            .Where(item => item.Item is Food)
-            .Select(item => item.Item)
-            .ToList();
-
-        // Check if there are food items in the inventory
-        if (foodItems.Count == 0)
-        {
-            Console.WriteLine($"{peasant.Name} does not have any food items to trade.");
-            return null;
-        }
-
-        // Use RNG.GenerateRandomNumber to pick a random food item from the list
-        int randomIndex = RNG.GenerateRandomNumber(0, foodItems.Count - 1);
-
-        // Return the selected food item
-        return foodItems[randomIndex];
-    }
-    static Weapon GetRandomSwordOrSpear()
-    {
-        Random random = new Random();
-        int randomValue = random.Next(2); // 0 or 1
-
-        return randomValue == 0 ? new Weapon("Sword", 30, new Price(15)) : new Weapon("Spear", 25, new Price(10));
-    }
-
-
 
     static Peasant GetRandomPeasant(List<Peasant> peasants)
     {
         // Check if there are peasants in the list
-        if (peasants.Count == 0)
-        {
-            Console.WriteLine("No eligible peasants found for trading.");
-            return null;
-        }
 
         // Use RNG.GenerateRandomNumber to pick a random index from the list
         int randomIndex = RNG.GenerateRandomNumber(0, peasants.Count - 1);
@@ -399,10 +356,64 @@ public class Program
         return peasants[randomIndex];
     }
 
-    static void HandleRandomEvent(string message)
+    static void TradeItems(Peasant peasant1, Peasant peasant2)
     {
-        Console.WriteLine("Random Event: " + message);
+        // Check if there are enough eligible peasants for trading
+        if (peasant1 == null || peasant2 == null)
+        {
+            return;
+        }
+
+        // Check if both peasants have items to trade
+        if (peasant1.Inventory.Count > 0 && peasant2.Inventory.Count > 0)
+        {
+            // Select random items from each peasant's inventory
+            var randomItemFromPeasant1 = GetRandomItem(peasant1);
+            var randomItemFromPeasant2 = GetRandomItem(peasant2);
+
+            // Check if the selected items are different
+            if (randomItemFromPeasant1 != randomItemFromPeasant2)
+            {
+                // Swap the items between the peasants
+                peasant1.Inventory.Remove(new InventoryItem { Item = randomItemFromPeasant1 });
+                peasant2.Inventory.Remove(new InventoryItem { Item = randomItemFromPeasant2 });
+
+                peasant1.Inventory.Add(new InventoryItem { Item = randomItemFromPeasant2 });
+                peasant2.Inventory.Add(new InventoryItem { Item = randomItemFromPeasant1 });
+
+                Console.WriteLine($"{peasant1.Name} traded {randomItemFromPeasant1.Name} with {peasant2.Name} for {randomItemFromPeasant2.Name}.");
+            }
+            else
+            {
+                Console.WriteLine("Trade failed: Peasants couldn't agree on the terms.");
+            }
+        }
+        else
+        {
+            Console.WriteLine("Trade failed: One or both of the peasants do not have items to trade.");
+        }
+    }
+
+    static IItem GetRandomItem(Peasant peasant)
+    {
+        // Check if the peasant has items in their inventory
+        if (peasant.Inventory.Count > 0)
+        {
+            // Use RNG.GenerateRandomNumber to pick a random item from the inventory
+            int randomIndex = RNG.GenerateRandomNumber(0, peasant.Inventory.Count - 1);
+
+            // Return the selected item
+            return peasant.Inventory[randomIndex].Item;
+        }
+        return null; // Return null if no items are available for trade.
     }
 
 
+    static Weapon GetRandomSwordOrSpear()
+    {
+        Random random = new Random();
+        int randomValue = random.Next(2); // 0 or 1
+
+        return randomValue == 0 ? new Weapon("Sword", 30, new Price(15)) : new Weapon("Spear", 25, new Price(10));
+    }
 }

@@ -124,14 +124,15 @@ public class Peasant : Villager
 {
     public string Job { get; set; }
     public List<TradeGood> TradeGoods { get; set; }
-    public List<Loot> loots { get; set; }
 
-    public Peasant(string job, List<TradeGood> tradeGoods, string name, int age, List<InventoryItem> inventory, int money, Location currentLocation, int health)
-        : base(name, age, inventory, money, currentLocation, health)
+    public Peasant(string job, List<TradeGood> tradeGoods, string name, int age, int money, Location currentLocation, int health)
+       : base(name, age, new List<InventoryItem>(), money, currentLocation, health)
     {
         Job = job;
         TradeGoods = tradeGoods; // Assign the TradeGoods property
+        Inventory = ItemGenerator.GenerateRandomItems(); // Generate random items for the peasant
     }
+
 
 }
 
@@ -155,18 +156,7 @@ public class Loot
     }
 
 }
-public class King : Villager
-{
-    public string Title { get; set; }
-    public string Enemy { get; set; }
 
-    public King(string name, int age, List<InventoryItem> inventory, int money, Location currentLocation, int health, string title, string enemy)
-        : base(name, age, inventory, money, currentLocation, health)
-    {
-        Title = title;
-        Enemy = enemy;
-    }
-}
 
 public class InventoryItem
 {
