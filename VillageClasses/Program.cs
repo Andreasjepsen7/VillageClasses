@@ -1,14 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public class Program
 {
-    static Paladins paladin;
-    static Peasant peasant;
-    static Location village;
-
     public delegate void RandomEventDelegate(string message);
     static event RandomEventDelegate RandomEvent;
+    static List<Paladins> paladins;
+    static List<Peasant> peasants;
+
+    static List<Pillager> pillagers;
+    static List<TradeGood> availableTradeGoods;
+
+    static Location castle;
+    static Location village;
+    static Location fishingHut;
+    static Location pillagersCamp;
 
     static void Main(string[] args)
     {
@@ -18,61 +25,72 @@ public class Program
 
     static void InitializeGame()
     {
-        // Initialize your game world, characters, and locations
-        Location castle = new Location("Castle", "A grand castle where the Paladins reside");
+        // Initialize locations
+        castle = new Location("Castle", "A grand castle where the Paladins reside");
         village = new Location("Village", "A peaceful village of the Peasants");
-        Location pillagersCamp = new Location("Pillager's Camp", "A small camp where the terrifying pillagers live");
+        fishingHut = new Location("Fishing Hut", "A fishing hut where plenty of fish are caught every day");
+        pillagersCamp = new Location("Pillager's Camp", "A small camp where the terrifying pillagers live");
 
-        paladin = new Paladins("Paladin Kaj", 40, new List<InventoryItem>(), 1000, castle, 100)
+        availableTradeGoods = new List<TradeGood>
         {
-            Armor = "Shiny Armor",
-            HasShield = true
+            new TradeGood("Coal"),
+            new TradeGood("Wood"),
+            new TradeGood("Fish"),
         };
 
-        List<Paladins> paladins = new List<Paladins>
+        // Initialize characters and lists
+        var loot = new List<Loot> { new Loot("Coal"), new Loot("Wood"), new Loot("Fish") };
+
+        paladins = new List<Paladins>
         {
-            new Paladins("Paladin Søren", 50, new List<InventoryItem>(), 1000, castle, 100),
-            new Paladins("Paladin Thomas", 505, new List<InventoryItem>(), 1000, castle, 100)
+            new Paladins("Rusty armor", false, "Paladin Søren", 50, new List<InventoryItem>(), 1000, castle, 100, GetRandomSwordOrSpear()),
+            new Paladins("Goldsen armor", true, "Paladin Thomas", 505, new List<InventoryItem>(), 1000, castle, 100, GetRandomSwordOrSpear()),
+            new Paladins("Steel armor", true, "Paladin Kaj", 40, new List<InventoryItem>(), 1000, castle, 100, GetRandomSwordOrSpear())
         };
 
-        peasant = new Peasant("Mikkel", 35, ItemGenerator.GenerateRandomItems(), 500, village, 80)
+        peasants = new List<Peasant>
         {
-            Job = "Farmer",
-            TradeGoods = new List<TradeGood> { new TradeGood("Crops"), new TradeGood("Livestock") }
+            new Peasant("Coal Miner", GetRandomTradeGoods(), "Mads", 20, new List<InventoryItem>(), 500, village, 100),
+            new Peasant("Woodcutter", GetRandomTradeGoods(), "Andreas", 23, new List<InventoryItem>(), 200, village, 100),
+            new Peasant("Fisher", GetRandomTradeGoods(), "Mikkel", 18, new List<InventoryItem>(), 50, fishingHut, 100)
         };
 
-        List<Peasant> peasants = new List<Peasant>
-{
-    new Peasant("Mads", 20, new List<InventoryItem>(), 500, village, 100),
-    new Peasant("Andreas", 7, new List<InventoryItem>(), 200, village, 100),
-};
-
-
-        Pillager pillager = new Pillager("Pillager 1", 45, new List<InventoryItem>(), 100, pillagersCamp, 100)
-        {
-            AggressionLevel = "High",
-            Infamous = true,
-            CombatSkills = new List<string> { "Swordsmanship", "Archery" },
-            Loot = new List<string> { "Gold", "Gems" }
-        };
-
-        List<Pillager> pillagers = new List<Pillager>
-    {
-        new Pillager("Pillager 2", 30, new List<InventoryItem>(), 50, pillagersCamp, 80),
-        new Pillager("Pillager 3", 28, new List<InventoryItem>(), 45, pillagersCamp, 75),
-        // Add more Pillagers as needed
-    };
-
-        castle.Inhabitants.Add(paladin);
-        village.Inhabitants.Add(peasant);
         village.Inhabitants.AddRange(peasants);
-        pillagersCamp.Inhabitants.Add(pillager);
-        pillagersCamp.Inhabitants.AddRange(pillagers);
+
+        pillagers = new List<Pillager>
+        {
+            new Pillager("High", true, new List<Loot>(), false, false, "Pillager Joe", 30, new List<InventoryItem>(), 0, pillagersCamp, 100),
+            new Pillager("Medium", true, new List<Loot>(), false, false, "Pillager Monty", 30, new List<InventoryItem>(), 0, pillagersCamp, 100),
+            new Pillager("Low", false, new List<Loot>(), false, false, "Pillager Clyde", 30, new List<InventoryItem>(), 0, pillagersCamp, 100),
+        };
+
+
 
         RandomEvent += HandleRandomEvent;
 
         Console.WriteLine("Welcome to the RPG game!");
+
+        // Assign random trade goods to peasants
+        GetRandomTradeGoods();
     }
+
+    static List<TradeGood> GetRandomTradeGoods()
+    {
+        List<TradeGood> randomGoods = new List<TradeGood>();
+        Random random = new Random();
+
+        // Determine how many random trade goods to assign to the peasant
+        int count = random.Next(1, availableTradeGoods.Count + 1);
+
+        // Shuffle the available trade goods
+        List<TradeGood> shuffledTradeGoods = availableTradeGoods.OrderBy(item => random.Next()).ToList();
+
+        // Take the first 'count' trade goods from the shuffled list
+        randomGoods.AddRange(shuffledTradeGoods.Take(count));
+
+        return randomGoods;
+    }
+
 
     static void RunGameLoop()
     {
@@ -81,6 +99,7 @@ public class Program
             Console.WriteLine("\nOptions:");
             Console.WriteLine("1. Simulate a day");
             Console.WriteLine("2. Exit");
+            Console.WriteLine("3. View all characters");
 
             string choice = Console.ReadLine();
 
@@ -93,6 +112,10 @@ public class Program
                 case "2":
                     Console.WriteLine("Goodbye!");
                     return;
+                case "3":
+                    Console.Clear();
+                    ViewAllCharacters();
+                    break;
                 default:
                     Console.WriteLine("Invalid choice. Please try again.");
                     break;
@@ -115,13 +138,12 @@ public class Program
         bool pillagersAttack = RNG.GenerateRandomNumber(1, 2) == 1; // 50% chance of attack
         if (pillagersAttack)
         {
-            // Implement the attack logic
-            pillagersCampAttack();
+            PillagersCampAttack();
         }
 
         CheckAndHandleDeceasedVillagers(village);
 
-        HandleCharacterInteractions();
+        HandleCharacterInteractions(paladins[0], peasants[0]);
     }
 
     static string GenerateRandomEvent(int eventType)
@@ -134,79 +156,159 @@ public class Program
                 return "A festival is held in the town square.";
             case 3:
                 return "A monster is spotted in the nearby forest.";
-            // Add more event types as needed
             default:
                 return "A peaceful day in the village.";
         }
     }
 
-    static void pillagersCampAttack()
+    static void PillagersCampAttack()
     {
         Console.WriteLine("Pillagers are attacking a peasant!");
 
         // Select a random Peasant to target from the list of Peasants in the village
-        List<Peasant> peasants = village.Inhabitants.OfType<Peasant>().ToList();
-        if (peasants.Count > 0)
-        {
-            int randomPeasantIndex = RNG.GenerateRandomNumber(0, peasants.Count - 1);
-            Peasant targetPeasant = peasants[randomPeasantIndex];
+        List<Peasant> peasantsInVillage = village.Inhabitants.OfType<Peasant>().ToList();
 
-            // Implement logic to decrease the targeted Peasant's health or resources
-            int damage = RNG.GenerateRandomNumber(10, 30); // Random damage amount
-            targetPeasant.Health -= damage;
-
-            Console.WriteLine($"{targetPeasant.Name} suffered {damage} points of damage.");
-            Console.WriteLine($"Peasant {targetPeasant.Name}'s Health: {targetPeasant.Health}");
-        }
-        else
+        if (peasantsInVillage.Count == 0)
         {
             Console.WriteLine("There are no peasants in the village to attack.");
+            return; // Exit the method if there are no peasants to attack
+        }
+
+        int randomPeasantIndex = RNG.GenerateRandomNumber(0, peasantsInVillage.Count - 1);
+        Peasant targetPeasant = peasantsInVillage[randomPeasantIndex];
+
+        // Implement logic to decrease the targeted Peasant's health
+        int damage = RNG.GenerateRandomNumber(10, 30); // Random damage amount
+        targetPeasant.Health -= damage;
+
+        Console.WriteLine($"{targetPeasant.Name} suffered {damage} points of damage.");
+        Console.WriteLine($"Peasant {targetPeasant.Name}'s Health: {targetPeasant.Health}");
+
+        // Check if the peasant's health drops to or below zero
+        if (targetPeasant.Health <= 0)
+        {
+            Console.WriteLine($"{targetPeasant.Name} has been defeated!");
+            // Remove the defeated peasant from the village.Inhabitants list
+            village.Inhabitants.Remove(targetPeasant);
+        }
+    }
+
+
+
+    static void ViewAllCharacters()
+    {
+        foreach (Paladins paladin in paladins)
+        {
+            if (paladin.CurrentLocationObj != null && paladin.CurrentLocationObj.Name != null)
+            {
+                Console.WriteLine("Paladin Name: " + paladin.Name);
+                Console.WriteLine("Armor Type: " + paladin.Armor);
+                Console.WriteLine("Health: " + paladin.Health);
+                Console.WriteLine("Inventory Weapon: " + paladin.EquippedWeapon.Name);
+                Console.WriteLine("Gold: " + paladin.Money);
+                Console.WriteLine("Location: " + paladin.CurrentLocationObj.Name);
+                Console.WriteLine();
+            }
+            else
+            {
+                Console.WriteLine("Paladin Location is not defined.");
+            }
+        }
+
+        foreach (Peasant peasant in peasants)
+        {
+            Console.WriteLine("Peasant name: " + peasant.Name);
+            Console.WriteLine("Peasant age: " + peasant.Age);
+            Console.WriteLine("Peasant health: " + peasant.Health);
+            if (peasant.TradeGoods != null)
+            {
+                Console.WriteLine("Peasant Trade Goods: " + string.Join(", ", peasant.TradeGoods.Select(g => g.Name)));
+            }
+            else
+            {
+                Console.WriteLine("Peasant Trade Goods are not defined.");
+            }
+            Console.WriteLine("Gold: " + peasant.Money);
+            Console.WriteLine();
+        }
+        foreach (Pillager pillager in pillagers)
+        {
+            Console.WriteLine("Pillager name: " + pillager.Name);
+            Console.WriteLine("Pillager age: " + pillager.Age);
+            Console.WriteLine("Pillager health: " + pillager.Health);
+            Console.WriteLine("Pillager aggression: " + pillager.AggressionLevel);
+            Console.WriteLine();
         }
     }
 
     static void CheckAndHandleDeceasedVillagers(Location location)
     {
-        foreach (Peasant peasants in location.Inhabitants.ToList())
+        // Create a copy of the list of inhabitants to avoid modifying it directly in the loop
+        List<Peasant> deceasedPeasants = new List<Peasant>();
+
+        foreach (Peasant peasant in location.Inhabitants.ToList())
         {
-            if (peasants.Health <= 0)
+            if (peasant != null && peasant.Health <= 0)
             {
-                Console.WriteLine($"{peasants.Name} has died.");
-                location.Inhabitants.Remove(peasants);
+                deceasedPeasants.Add(peasant);
             }
+        }
+
+        // Remove deceased peasants from the location's inhabitants
+        foreach (Peasant deceasedPeasant in deceasedPeasants)
+        {
+            location.Inhabitants.Remove(deceasedPeasant);
         }
     }
 
-    static void HandleCharacterInteractions()
+    static void HandleCharacterInteractions(Paladins paladin, Peasant peasant)
     {
         Console.WriteLine("Random Character Interaction:");
 
-        // Generate a random interaction option
-        int randomInteraction = RNG.GenerateRandomNumber(1, 3);
-
-        switch (randomInteraction)
+        if (peasant != null && peasant.Health > 0)
         {
-            case 1:
-                // Paladin buys food from a Peasant
-                paladin.BuyItem(peasant, new Food { Name = "Bread", Nutrition = 10, Price = new Price(5) }, 10);
-                Console.WriteLine("Paladin bought food from a Peasant.");
-                break;
-            case 2:
-                // Peasant sells food to a Paladin
-                peasant.SellItem(paladin, new Food { Name = "Apples", Nutrition = 8, Price = new Price(4) }, 5);
-                Console.WriteLine("Peasant sold food to a Paladin.");
-                break;
-            case 3:
-                // Villagers trade food items
-                TradeItemsBetweenPeasants(new List<Peasant> { peasant });
-                Console.WriteLine("Peasants traded food items.");
-                break;
-            case 4:
-                // Villagers trade non-food items
-                TradeItemsBetweenPeasants(new List<Peasant> { peasant });
-                Console.WriteLine("Peasants traded non-food items.");
-                break;
+            // The peasant is alive and can interact.
+
+            // Generate a random interaction option
+            int randomInteraction = RNG.GenerateRandomNumber(1, 4);
+
+            switch (randomInteraction)
+            {
+                case 1:
+                    if (peasant.TradeGoods != null)
+                    {
+                        paladin.BuyItem(peasant, new Food { Name = "Bread", Nutrition = 10, Price = new Price(5) }, 10);
+                        Console.WriteLine($"{peasant.Name} bought food from {peasant.Name}.");
+                    }
+                    break;
+                case 2:
+                    // Peasant sells food to a Paladin
+                    if (paladin != null && peasant != null && peasant.TradeGoods != null)
+                    {
+                        peasant.SellItem(paladin, new Food { Name = "Apples", Nutrition = 8, Price = new Price(4) }, 5);
+                        Console.WriteLine($"{peasant.Name} sold food to {paladin.Name}.");
+                    }
+                    break;
+                case 3:
+                    // Villagers trade food items
+                    TradeItemsBetweenPeasants(new List<Peasant> { peasant });
+                    Console.WriteLine($"Peasants traded food items.");
+                    break;
+                case 4:
+                    // Villagers trade non-food items
+                    TradeItemsBetweenPeasants(new List<Peasant> { peasant });
+                    Console.WriteLine("Peasants traded non-food items.");
+                    break;
+            }
+        }
+        else
+        {
+            Console.WriteLine($"{peasant.Name} is dead and cannot trade or interact.");
         }
     }
+
+
+
 
     static void TradeItemsBetweenPeasants(List<Peasant> peasants)
     {
@@ -271,7 +373,13 @@ public class Program
         // Return the selected food item
         return foodItems[randomIndex];
     }
+    static Weapon GetRandomSwordOrSpear()
+    {
+        Random random = new Random();
+        int randomValue = random.Next(2); // 0 or 1
 
+        return randomValue == 0 ? new Weapon("Sword", 30, new Price(15)) : new Weapon("Spear", 25, new Price(10));
+    }
 
 
 
@@ -291,9 +399,10 @@ public class Program
         return peasants[randomIndex];
     }
 
-
     static void HandleRandomEvent(string message)
     {
         Console.WriteLine("Random Event: " + message);
     }
+
+
 }

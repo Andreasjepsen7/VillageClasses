@@ -60,14 +60,14 @@ public class Pillager : Villager
 {
     public string AggressionLevel { get; set; }
     public bool Infamous { get; set; }
-    public List<string> CombatSkills { get; set; }
-    public List<string> Loot { get; set; }
+    public List<Loot> loot { get; set; }
     public bool AttackedPeasant { get; set; }
     public bool IsDefeated { get; set; }
 
-    public Pillager(string name, int age, List<InventoryItem> inventory, int money, Location currentLocation, int health)
+    public Pillager(string AggressionLevel, bool Infamous, List<Loot> loot, bool AttackedPeasant, bool IsDefeated, string name, int age, List<InventoryItem> inventory, int money, Location currentLocation, int health)
         : base(name, age, inventory, money, currentLocation, health)
     {
+        this.AggressionLevel = AggressionLevel;
     }
 
     public void AttackPeasant(Peasant peasant)
@@ -84,14 +84,19 @@ public class Paladins : Villager
 {
     public string Armor { get; set; }
     public bool HasShield { get; set; }
+    public Weapon EquippedWeapon { get; set; }
 
-    public Paladins(string name, int age, List<InventoryItem> inventory, int money, Location currentLocation, int health)
+    public Paladins(string Armor, bool HasShield, string name, int age, List<InventoryItem> inventory, int money, Location currentLocation, int health, Weapon equippedWeapon)
         : base(name, age, inventory, money, currentLocation, health)
     {
+        this.Armor = Armor;
+        this.HasShield = HasShield;
+        this.EquippedWeapon = equippedWeapon;
     }
+
     public void Attack(Pillager pillager)
     {
-        int damage = CalculateAttackDamage(); // You can implement this method to calculate damage
+        int damage = CalculateAttackDamage();
         pillager.Health -= damage;
 
         if (pillager.Health <= 0)
@@ -106,24 +111,30 @@ public class Paladins : Villager
 
     private int CalculateAttackDamage()
     {
-        // Implement your damage calculation logic, such as using the weapon, skills, etc.
-        // For simplicity, you can generate random damage within a range.
-        int minDamage = 10;
-        int maxDamage = 20;
+        // Implement your damage calculation logic based on the equipped weapon, skills, etc.
+        int baseDamage = EquippedWeapon != null ? EquippedWeapon.Damage : 10; // Default damage if no weapon is equipped
+        int minDamage = baseDamage - 5;
+        int maxDamage = baseDamage + 5;
         return RNG.GenerateRandomNumber(minDamage, maxDamage);
     }
 }
+
 
 public class Peasant : Villager
 {
     public string Job { get; set; }
     public List<TradeGood> TradeGoods { get; set; }
+    public List<Loot> loots { get; set; }
 
-    public Peasant(string name, int age, List<InventoryItem> inventory, int money, Location currentLocation, int health)
+    public Peasant(string job, List<TradeGood> tradeGoods, string name, int age, List<InventoryItem> inventory, int money, Location currentLocation, int health)
         : base(name, age, inventory, money, currentLocation, health)
     {
+        Job = job;
+        TradeGoods = tradeGoods; // Assign the TradeGoods property
     }
+
 }
+
 
 public class TradeGood
 {
@@ -135,6 +146,15 @@ public class TradeGood
     }
 }
 
+public class Loot
+{
+    public string Name { get; set; }
+    public Loot(string name)
+    {
+        Name = name;
+    }
+
+}
 public class King : Villager
 {
     public string Title { get; set; }
@@ -165,9 +185,16 @@ public class Weapon : IItem
 {
     public string Name { get; set; }
     public int Damage { get; set; }
-    public string Type { get; set; }
     public Price Price { get; set; }
+
+    public Weapon(string name, int damage, Price price)
+    {
+        Name = name;
+        Damage = damage;
+        Price = price;
+    }
 }
+
 
 public class Food : IItem
 {
@@ -222,3 +249,4 @@ public class Location
         Inhabitants = new List<Villager>();
     }
 }
+
