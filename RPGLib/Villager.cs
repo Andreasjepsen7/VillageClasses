@@ -11,6 +11,11 @@ namespace RPGLib
         public int Health { get; set; }
         public Location CurrentLocationObj { get; set; }
 
+        public override string ToString()
+        {
+            return Name;
+        }
+
         public Villager(string name, int age, List<InventoryItem> inventory, int money, Location currentLocation, int health)
         {
             Name = name;
